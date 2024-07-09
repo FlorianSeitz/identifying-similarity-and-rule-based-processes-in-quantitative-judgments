@@ -8,19 +8,20 @@ set.seed(321)
 
 # recreates the environment
 env <- function(x1, x2) {
-  round(5/3 * x1 * x2 + 2)
+  round(5/3 * x1 * x2 + 2) # true multiplicative function that links cues and criterion
 }
-dt <- as.data.table(expand.grid(x1 = 1:4, x2 = 1:4))
-dt[, id := 1:.N]
+dt <- as.data.table(expand.grid(x1 = 1:4, x2 = 1:4)) # possible cue values
+dt[, id := 1:.N] # id for each stimulus
 
-ex <- data.table(x1 = c(1, 2, 3, 4), x2 = c(4, 1, 2, 3))
-ex[, crit := env(x1, x2)]
+ex <- data.table(x1 = c(1, 2, 3, 4), x2 = c(4, 1, 2, 3)) # exemplar cue values
+ex[, crit := env(x1, x2)] # exemplar criterion values
 ex <- unique(merge(ex, dt))
 
 # computes the similarity process
 computes_sim <- function(pars, dt, y = ex) {
   b1 <- pars["b1"]; b2 <- pars["b2"]
-  dt[, exp(-(b1 * abs(x1 - y[, x1]) + b2 * abs(x2 - y[, x2]))), by = id][, sum(V1 * y[, crit]) / sum(V1), by = id][, V1]
+  sims <- dt[, .(sim = exp(-(b1 * abs(x1 - y[, x1]) + b2 * abs(x2 - y[, x2])))), by = id]
+  sims[, sum(sim * y[, crit]) / sum(sim), by = id][, V1]
 }
 
 # computes the rule process
