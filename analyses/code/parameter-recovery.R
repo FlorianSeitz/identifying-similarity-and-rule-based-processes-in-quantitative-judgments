@@ -63,7 +63,7 @@ res <- as.data.table(do.call("rbind", lapply(1:nreps, function(rep) {
     preds <- predicts(pars_i, sim, rule) # makes prediction with current alpha
     resps <- round(preds + rnorm(length(preds), sd = pars_i[["sigma"]])) # adds noise to responses
 
-    m <- solnp(pars = c(alpha = .5, b0 = 0, b1 = 5, b2 = 5, sd = 1),
+    m <- solnp(pars = c(alpha = .5, b0 = 0, b1 = 5, b2 = 5, sigma = 1),
                LB = c(0, -10, 0, 0, 0), UB = c(1, 10, 10, 10, 10), 
                fun = model, dt = dt, ex = ex, resps = resps)
     
@@ -76,46 +76,19 @@ res <- as.data.table(do.call("rbind", lapply(1:nreps, function(rep) {
   }))
 })))
 
-fwrite(res, "../../analyses/other/parameter-recovery.csv")
+# fwrite(res, "../../analyses/other/parameter-recovery.csv")
 
-res[, rmserr(true, fit), by = par][, round(.SD, 2), by = par]
-res[par == "alpha", cor(true, fit), by = iter][, summary(V1)]
+res[, rmserr(true, fit), by = par][, round(.SD, 2), by = par] # error indices
+res[par == "alpha", cor(true, fit), by = iter][, summary(V1)] # correlation between true and estimated alpha
 
-res[par == "alpha" & true == .5, mean(fit)]
-res[par == "alpha" & true != .5, .5 %between% sort(c(true, fit)), by = paste0(iter, "-", true)][, 1 - mean(V1)]
+res[par == "alpha" & true == .5, mean(fit)] # mean alpha estimate, when true alpha is .5
+# Is alpha qualitatively recovered (i.e., on the same side of .5)?
+res[par == "alpha" & true != .5, .5 %between% sort(c(true, fit)), by = paste0(iter, "-", true)][, 1 - mean(V1)] 
 
-res[par == "alpha", lm(fit~true)$coefficients[["true"]], by = iter][, summary(V1)]
-res[, true0 := true - .5]
-res[par == "alpha", lm(fit~true0)$coefficients[["(Intercept)"]], by = iter][, summary(V1)]
-
+# makes Figure A1
 theme_set(theme_classic())
-ggplot(res[par == "alpha" & iter <= 100], aes(true, fit)) +
-  geom_abline(intercept = 0, slope = 1, lty = 2) +
-  # geom_boxplot() +
-  geom_point(alpha = .05) +
-  geom_line(aes(group = iter), alpha = .05) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = .05) +
-  stat_summary(fun.data = mean_se, geom = "point", size = 3) +
-  stat_summary(fun.data = mean_se, geom = "line", size = 1) +
-  scale_x_continuous(name = expression(True~alpha~value), limits = c(0, 1),
-                     labels =  c("Rule\n\u03b1 = 0", "\n\u03b1 = .25", "Mix\n\u03b1 = .5", "\n\u03b1 = .75", "Similarity\n\u03b1 = 1")) +
-  scale_y_continuous(name = expression(Estimated~alpha~value), limits = c(0, 1)) +
-  coord_equal()
-ggsave("../lan-ex/figures/alpha-recovery.png", width = 5, height = 5)
-
 ggplot(res[par == "alpha"], aes(as.factor(true), fit)) +
   geom_boxplot(outlier.color = grey(.4, .2)) +
   scale_x_discrete(name = expression(True~alpha~value)) +
   scale_y_continuous(name = expression(Estimated~alpha~value), limits = c(0, 1), breaks = seq(0, 1, .1))
-ggsave("Projects/lan-ex/figures/alpha-recovery2.png", width = 5, height = 5)
-
-ggplot(res[par == "alpha"], aes(true, fit)) +
-  geom_abline(intercept = 0, slope = 1, lty = 2) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = .05) +
-  stat_summary(fun.data = mean_se, geom = "point", size = 3) +
-  # stat_summary(fun.data = mean_se, geom = "line", size = 1) +
-  scale_x_continuous(name = expression(True~alpha~value), limits = c(0, 1),
-                     labels =  c("Rule\n\u03b1 = 0", "\n\u03b1 = .25", "Mix\n\u03b1 = .5", "\n\u03b1 = .75", "Similarity\n\u03b1 = 1")) +
-  scale_y_continuous(name = expression(Estimated~alpha~value), limits = c(0, 1)) +
-  coord_equal()
-ggsave("../lan-ex/figures/alpha-recovery.png", width = 5, height = 5)
+# ggsave("../../analyses/figures/figurea1.png", width = 5, height = 5)
