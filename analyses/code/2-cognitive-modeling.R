@@ -3,7 +3,7 @@
 # ==========================================================================
 
 # ==========================================================================
-exp <- 2 # specify experiment: 1 (= additive) or 2 (= multiplicative)
+exp <- 1 # specify experiment: 1 (= additive) or 2 (= multiplicative)
 parallel <- TRUE # fit on a parallel machine (Unix) or single core
 # ==========================================================================
 
